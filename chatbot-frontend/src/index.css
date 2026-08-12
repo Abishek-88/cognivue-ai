@@ -1,0 +1,125 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    @apply bg-surface-50 text-slate-800 font-sans antialiased;
+    @apply dark:bg-surface-950 dark:text-slate-100;
+  }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { @apply bg-transparent; }
+  ::-webkit-scrollbar-thumb { @apply bg-slate-300 rounded-full dark:bg-slate-600; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-slate-400 dark:bg-slate-500; }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-xl
+           bg-brand-600 text-white font-medium text-sm
+           hover:bg-brand-700 active:bg-brand-800
+           transition-all duration-150 shadow-sm
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-xl
+           bg-white border border-slate-200 text-slate-700 font-medium text-sm
+           hover:bg-slate-50 active:bg-slate-100
+           transition-all duration-150 shadow-sm
+           dark:bg-surface-800 dark:border-slate-700 dark:text-slate-200
+           dark:hover:bg-slate-700
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center gap-2 px-3 py-1.5 rounded-lg
+           text-slate-600 text-sm font-medium
+           hover:bg-slate-100 active:bg-slate-200
+           transition-all duration-150
+           dark:text-slate-400 dark:hover:bg-slate-800;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white
+           text-slate-800 text-sm placeholder-slate-400
+           focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent
+           transition-all duration-150
+           dark:bg-surface-800 dark:border-slate-700 dark:text-slate-100
+           dark:placeholder-slate-500 dark:focus:ring-brand-400;
+  }
+
+  .card {
+    @apply bg-white rounded-2xl border border-slate-200 shadow-sm
+           dark:bg-surface-800 dark:border-slate-700;
+  }
+
+  .sidebar-item {
+    @apply flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium
+           text-slate-600 hover:bg-slate-100 hover:text-slate-900
+           transition-all duration-150 cursor-pointer
+           dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100;
+  }
+
+  .sidebar-item.active {
+    @apply bg-brand-50 text-brand-700
+           dark:bg-brand-900/30 dark:text-brand-300;
+  }
+
+  .chat-bubble-user {
+    @apply bg-brand-600 text-white rounded-2xl rounded-tr-sm px-4 py-3 max-w-[80%]
+           text-sm leading-relaxed shadow-sm;
+  }
+
+  .chat-bubble-ai {
+    @apply bg-white border border-slate-200 rounded-2xl rounded-tl-sm px-4 py-3 max-w-[85%]
+           text-sm leading-relaxed shadow-sm
+           dark:bg-surface-800 dark:border-slate-700 dark:text-slate-100;
+  }
+
+  .typing-dot {
+    @apply w-2 h-2 rounded-full bg-slate-400 animate-pulse-dot;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-green  { @apply badge bg-emerald-100 text-emerald-700; }
+  .badge-yellow { @apply badge bg-amber-100  text-amber-700; }
+  .badge-red    { @apply badge bg-red-100    text-red-700; }
+  .badge-blue   { @apply badge bg-blue-100   text-blue-700; }
+  .badge-purple { @apply badge bg-purple-100 text-purple-700; }
+}
+
+/* Markdown prose styles inside chat */
+.prose-chat h1, .prose-chat h2, .prose-chat h3 {
+  @apply font-semibold text-slate-800 dark:text-slate-100 mt-3 mb-1;
+}
+.prose-chat h1 { @apply text-lg; }
+.prose-chat h2 { @apply text-base; }
+.prose-chat h3 { @apply text-sm; }
+.prose-chat p  { @apply mb-2 last:mb-0 leading-relaxed; }
+.prose-chat ul, .prose-chat ol { @apply ml-4 mb-2 space-y-1; }
+.prose-chat li { @apply text-sm; }
+.prose-chat ul li { list-style-type: disc; }
+.prose-chat ol li { list-style-type: decimal; }
+.prose-chat code {
+  @apply font-mono text-xs bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded;
+}
+.prose-chat pre {
+  @apply bg-slate-900 rounded-xl p-4 overflow-x-auto my-3;
+}
+.prose-chat pre code { @apply bg-transparent text-slate-100 p-0; }
+.prose-chat blockquote {
+  @apply border-l-4 border-brand-400 pl-4 italic text-slate-600 dark:text-slate-300 my-2;
+}
+.prose-chat strong { @apply font-semibold text-slate-900 dark:text-white; }
+.prose-chat a { @apply text-brand-600 underline hover:text-brand-800; }
+.prose-chat table { @apply w-full text-sm border-collapse my-3; }
+.prose-chat th { @apply border border-slate-300 bg-slate-100 px-3 py-1.5 text-left font-semibold; }
+.prose-chat td { @apply border border-slate-200 px-3 py-1.5; }
