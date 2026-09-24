@@ -22,9 +22,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class DocumentService {
-
-    private static final int TOP_K_CHUNKS = 5;
-
     private final DocumentRepository documentRepo;
     private final UserRepository userRepo;
     private final MessageRepository messageRepo;
@@ -33,13 +30,12 @@ public class DocumentService {
     private final CloudinaryService cloudinaryService;
     private final GeminiService geminiService;
     private final ChromaDbService chromaDbService;
-
-    // ─── Upload ──────────────────────────────────────────────────────────────────
+    private final DocumentRAGService documentRAGService; // added
 
     @Transactional
     public ChatResponse.DocumentResponse uploadDocument(String email,
-                                                         MultipartFile file,
-                                                         Document.DocumentType type) {
+                                                          MultipartFile file,
+                                                          Document.DocumentType type) {
         validateFile(file);
         User user = getUser(email);
 
@@ -116,7 +112,6 @@ public class DocumentService {
     }
 
     // ─── RAG Question Answering ──────────────────────────────────────────────────
-
     @Transactional
     public ChatResponse.AiReplyResponse askQuestion(String email, ChatRequest.DocumentQuestion request) {
         User user = getUser(email);
@@ -132,49 +127,40 @@ public class DocumentService {
         if (request.getConversationId() != null) {
             conversation = conversationRepo.findByIdAndUser(request.getConversationId(), user)
                     .orElseThrow(() -> new ResourceNotFoundException("Conversation not found"));
-        } else {
-            conversation = conversationRepo.save(Conversation.builder()
-                    .user(user)
-                    .title("Document: " + document.getOriginalName())
-                    .type(Conversation.ConversationType.DOCUMENT_QA)
-                    .documentId(document.getId())
-                    .build());
-        }
-
-        // Embed the question
-        List<Double> questionEmbedding = geminiService.generateEmbedding(request.getQuestion());
-
-        // Retrieve relevant chunks
-        List<String> relevantChunks = chromaDbService.querySimilarChunks(
-                document.getChromaCollectionId(), questionEmbedding, TOP_K_CHUNKS);
-
-        // Build chat history
-        List<Message> history = messageRepo.findByConversationOrderByTimestampAsc(conversation);
-        List<Map<String, String>> chatHistory = history.stream()
-                .map(m -> Map.of(
-                        "role", m.getSender() == Message.Sender.USER ? "user" : "model",
-                        "text", m.getMessage()))
-                .collect(Collectors.toList());
-
-        // Generate answer with RAG
-        String answer = geminiService.answerWithContext(
-                request.getQuestion(), relevantChunks, chatHistory, request.getLanguageCode());
-
-        // Save messages
-        Message userMsg = saveMessage(conversation, Message.Sender.USER,
-                request.getQuestion(), Message.MessageType.TEXT, request.getLanguageCode());
-        Message aiMsg = saveMessage(conversation, Message.Sender.AI,
-                answer, Message.MessageType.TEXT, request.getLanguageCode());
-
-        return ChatResponse.AiReplyResponse.builder()
-                .conversationId(conversation.getId())
-                .userMessage(ChatResponse.MessageResponse.from(userMsg))
-                .aiMessage(ChatResponse.MessageResponse.from(aiMsg))
-                .sourcedChunks(relevantChunks)
-                .build();
+    } else {
+        conversation = conversationRepo.save(Conversation.builder()
+                .user(user)
+                .title("Document: " + document.getOriginalName())
+                .type(Conversation.ConversationType.DOCUMENT_QA)
+                .documentId(document.getId())
+                .build());
     }
 
-    // ─── List & Delete ───────────────────────────────────────────────────────────
+    // Embed the question
+    List<Double> questionEmbedding = geminiService.generateEmbedding(request.getQuestion());
+
+    // Retrieve relevant chunks (for sourcedChunks response)
+    List<String> relevantChunks = chromaDbService.querySimilarChunks(
+            document.getChromaCollectionId(),
+            questionEmbedding,
+            5); // TOP_K_CHUNKS = 5
+
+    // Generate answer via DocumentRAGService
+    String answer = documentRAGService.generateAnswer(document, conversation, request, questionEmbedding);
+
+    // Save messages
+    Message userMsg = saveMessage(conversation, Message.Sender.USER,
+            request.getQuestion(), Message.MessageType.TEXT, request.getLanguageCode());
+    Message aiMsg = saveMessage(conversation, Message.Sender.AI,
+            answer, Message.MessageType.TEXT, request.getLanguageCode());
+
+    return ChatResponse.AiReplyResponse.builder()
+            .conversationId(conversation.getId())
+            .userMessage(ChatResponse.MessageResponse.from(userMsg))
+            .aiMessage(ChatResponse.MessageResponse.from(aiMsg))
+            .sourcedChunks(relevantChunks)
+            .build();
+    }
 
     public List<ChatResponse.DocumentResponse> getUserDocuments(String email) {
         User user = getUser(email);
@@ -204,7 +190,6 @@ public class DocumentService {
     }
 
     // ─── Helpers ─────────────────────────────────────────────────────────────────
-
     private void validateFile(MultipartFile file) {
         if (file == null || file.isEmpty()) throw new BadRequestException("File is empty");
         String name = file.getOriginalFilename();
@@ -217,7 +202,7 @@ public class DocumentService {
     }
 
     private Message saveMessage(Conversation conv, Message.Sender sender,
-                                 String text, Message.MessageType type, String lang) {
+                                String text, Message.MessageType type, String lang) {
         return messageRepo.save(Message.builder()
                 .conversation(conv)
                 .sender(sender)

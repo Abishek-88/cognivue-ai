@@ -32,11 +32,15 @@ public class JwtUtils {
 
     public String generateAccessToken(Authentication authentication) {
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        return generateToken(userDetails.getUsername(), jwtExpirationMs, new HashMap<>());
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("type", "access");
+        return generateToken(userDetails.getUsername(), jwtExpirationMs, claims);
     }
 
     public String generateAccessToken(String email) {
-        return generateToken(email, jwtExpirationMs, new HashMap<>());
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("type", "access");
+        return generateToken(email, jwtExpirationMs, claims);
     }
 
     public String generateRefreshToken(String email) {

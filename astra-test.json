@@ -1,0 +1,9 @@
+﻿{
+  "model": "gpt-6-astra",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hello from my product"
+    }
+  ]
+}
